@@ -35,6 +35,9 @@ class RedmineBackend(models.Model):
 
     is_default = fields.Boolean('Default Redmine Service')
 
+    # TEST
+    name = fields.Char("Name")
+
     @api.multi
     def check_auth(self):
         """

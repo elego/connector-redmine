@@ -72,6 +72,8 @@ Contributors
 * Guillaume Auger <guillaume.auger@savoirfairelinux.com>
 * David Dufresne <david.dufresne@savoirfairelinux.com>
 * Lorenzo Battistini <lorenzo.battistini@agilebg.com>
+* Sven Hartmann <svenh@itis.de>
+* Yurdik Cervantes <ycervantes@elegosoft.de>
 
 
 Maintainer

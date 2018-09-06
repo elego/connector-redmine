@@ -5,7 +5,7 @@
 from datetime import datetime
 
 from odoo import fields
-from odoo.addons.connector.unit.mapper import mapping
+from odoo.addons.connector.components.mapper import mapping
 from odoo.addons.component.core import AbstractComponent
 
 

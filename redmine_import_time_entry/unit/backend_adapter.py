@@ -81,14 +81,14 @@ class TimeEntryAdapter(Component):
                 })
 
         res = {
-            'entry_id': long(entry.id),
+            'entry_id': int(entry.id),
             'spent_on': entry.spent_on,
             'hours': entry.hours,
-            'issue_id': issue and long(issue.id),
+            'issue_id': issue and int(issue.id),
             'issue_subject': issue and issue.subject,
             'contract_ref': contract_ref,
             'project_name': project.name,
-            'project_id': long(project.id),
+            'project_id': int(project.id),
             'updated_on': entry.updated_on,
             'comments': entry.comments,
         }

@@ -9,7 +9,7 @@ from odoo.tools.translate import _
 
 
 class HrTimesheetSheet(models.Model):
-    _inherit = 'hr_timesheet_sheet.sheet'
+    _inherit = 'hr_timesheet.sheet'
 
     @api.multi
     def import_timesheets_from_redmine(self):
@@ -51,8 +51,8 @@ class HrTimesheetSheet(models.Model):
 
         filters = {
             'login': employee.user_id.login,
-            'from_date': self.date_from,
-            'to_date': self.date_to,
+            'from_date': self.date_start,
+            'to_date': self.date_end,
         }
         with backend.work_on('redmine.account.analytic.line') as work:
             importer = work.component(usage='batch.importer')
