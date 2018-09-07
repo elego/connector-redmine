@@ -2,29 +2,26 @@
 # © 2016 Savoir-faire Linux
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+from importlib import reload
 from datetime import datetime
 
 from odoo.tests.common import TransactionCase
 from odoo.tools import (
     DEFAULT_SERVER_DATETIME_FORMAT, DEFAULT_SERVER_DATE_FORMAT)
 
-from odoo.addons.connector.connector import ConnectorEnvironment
-from odoo.addons.connector.backend import BACKENDS
+# Doesn't exist anymore. Remove it ?
+# from odoo.addons.connector.backend import BACKENDS
 
 from ..unit import mapper
 from ..unit import binder
 from ..unit import import_synchronizer
 from ..unit import backend_adapter
 
-from .. import backend, connector
-
 # Clean the connector environment
 # The module connector breaks the python environment when testing
 # we need to reload the python modules so that the classes are
 # registered again properly
-BACKENDS.backends.clear()
-reload(backend)
-reload(connector)
+# BACKENDS.backends.clear()
 reload(mapper)
 reload(binder)
 reload(import_synchronizer)
@@ -86,9 +83,6 @@ class TestRedmineConnector(TransactionCase):
             'version': '1.3',
         })
 
-        self.environment = ConnectorEnvironment(
-            self.backend, 'redmine.account.analytic.line')
-
         self.now = datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT)
         self.date_now = datetime.now().date().strftime(
             DEFAULT_SERVER_DATE_FORMAT)
@@ -108,21 +102,22 @@ class TestRedmineConnector(TransactionCase):
         self.redmine_timesheet = self.redmine_model.create(
             self.timesheet_vals)
 
-    def test_01_redmine_mapper(self):
-        mapper_obj = mapper.RedmineImportMapper(self.environment)
+    def test_01_redmine_import_mapper(self):
+        with self.backend.work_on('redmine.account.analytic.line') as work:
+            mapper = work.component(usage='import.mapper')
 
-        update = datetime(2015, 1, 1, 8, 32, 10)
-        record = {'updated_on': update}
+            update = datetime(2015, 1, 1, 8, 32, 10)
+            record = {'updated_on': update}
 
-        self.assertEqual(
-            mapper_obj.updated_on(record),
-            {'updated_on': update.strftime(DEFAULT_SERVER_DATETIME_FORMAT)})
+            self.assertEqual(
+                mapper.updated_on(record),
+                {'updated_on': update.strftime(DEFAULT_SERVER_DATETIME_FORMAT)})
 
-        self.assertEqual(
-            mapper_obj.backend_id(record), {'backend_id': self.backend.id})
+            self.assertEqual(
+                mapper.backend_id(record), {'backend_id': self.backend.id})
 
-        now = datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT)
-        self.assertEqual(mapper_obj.sync_date(record), {'sync_date': now})
+            now = datetime.now().strftime(DEFAULT_SERVER_DATETIME_FORMAT)
+            self.assertEqual(mapper.sync_date(record), {'sync_date': now})
 
     def test_02_redmine_binder_to_internal(self):
         binder_obj = binder.RedmineModelBinder(self.environment)

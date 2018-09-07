@@ -6,9 +6,12 @@ from odoo.tools.translate import _
 import odoo.addons.connector.exception as cn_exception
 from redminelib import exceptions
 from odoo.addons.component.core import Component
+from odoo.addons.connector_redmine.unit.backend_adapter import (
+    RedmineAdapter,
+)
 
 
-class TimeEntryAdapter(Component):
+class TimeEntryAdapter(RedmineAdapter):
     """
     Time Entry Backend Adapter for Redmine
 

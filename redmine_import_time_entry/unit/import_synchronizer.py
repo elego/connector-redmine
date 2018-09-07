@@ -2,6 +2,9 @@
 # © 2016 Savoir-faire Linux
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import logging
+_logger = logging.getLogger(__name__)
+
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 
 from odoo.addons.connector.exception import MappingError
@@ -19,6 +22,7 @@ class TimeEntryBatchImportSynchronizer(Component):
 
     def _import_record(self, external_id):
         """ Delay the import of the records"""
+        _logger.warning('ALALALAL')
         delayable = self.model.with_delay()
         delayable.import_record(self.backend_record, external_id)
 

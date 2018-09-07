@@ -13,6 +13,7 @@
     'license': 'AGPL-3',
     'depends': [
         'connector_redmine',
+        'account',              # Only needed for the tests ?
     ],
     'external_dependencies': {},
     'data': [

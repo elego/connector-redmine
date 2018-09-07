@@ -2,18 +2,20 @@
 # © 2016 Savoir-faire Linux
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
+import logging
+_logger = logging.getLogger(__name__)
+
+from importlib import reload
+
 from odoo.tests import common
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 
 from odoo.addons.connector_redmine.unit.binder import RedmineModelBinder
-from odoo.addons.connector_redmine.unit.import_synchronizer import (
-    import_batch, import_record)
 from odoo.addons.connector_redmine.tests import test_connector_redmine
-from odoo.addons.connector.connector import ConnectorEnvironment
-
 
 from ..unit import mapper
 from ..unit import backend_adapter
+
 from ..unit import import_synchronizer
 
 from mock import patch
@@ -26,13 +28,13 @@ reload(import_synchronizer)
 
 
 import_job_path = (
-    'odoo.addons.connector_redmine.unit.import_synchronizer.'
+    'odoo.addons.redmine_import_time_entry.unit.import_synchronizer.'
     'import_record.delay')
 
 
 def mock_delay(model_name, *args, **kwargs):
     """Enqueue the function. Return the uuid of the created job."""
-    return import_record(model_name, *args, **kwargs)
+    return self.env[model_name].import_record(*args, **kwargs)
 
 
 class TestImportTimeEntries(common.TransactionCase):
@@ -42,7 +44,7 @@ class TestImportTimeEntries(common.TransactionCase):
         self.backend_model = self.env['redmine.backend']
         self.user_model = self.env["res.users"]
         self.employee_model = self.env['hr.employee']
-        self.timesheet_model = self.env['hr_timesheet_sheet.sheet']
+        self.timesheet_model = self.env['hr_timesheet.sheet']
         self.account_model = self.env['account.analytic.account']
         self.redmine_model = self.env['redmine.account.analytic.line']
         self.general_account_model = self.env['account.account']
@@ -53,44 +55,40 @@ class TestImportTimeEntries(common.TransactionCase):
             'login': 'user_1',
         })
 
-        journal = self.env.ref('hr_timesheet.analytic_journal')
-
         self.account = self.account_model.create({
-            'type': 'contract',
+            # 'type': 'contract',
             'name': 'Test Redmine',
             'code': 'abcd',
-            'to_invoice': self.ref(
-                'hr_timesheet_invoice.timesheet_invoice_factor2'),
+            # 'to_invoice': self.ref(
+            #     'hr_timesheet_invoice.timesheet_invoice_factor2'),
         })
 
         self.account_2 = self.account_model.create({
-            'type': 'contract',
+            # 'type': 'contract',
             'name': 'Test Redmine',
             'code': 'efgh',
-            'to_invoice': self.ref(
-                'hr_timesheet_invoice.timesheet_invoice_factor1'),
+            # 'to_invoice': self.ref(
+            #     'hr_timesheet_invoice.timesheet_invoice_factor1'),
         })
 
         self.product = self.product_model.search(
             [('type', '=', 'service')])[0]
 
         self.general_account = self.general_account_model.create({
-            'type': 'other',
             'code': '123123',
             'name': 'test',
-            'user_type': self.ref('account.data_account_type_expense'),
+            'user_type_id': self.ref('account.data_account_type_expenses'),
         })
 
         self.product.write({
-            'property_account_expense': self.general_account.id,
+            'property_account_expense_id': self.general_account.id,
             'standard_price': 30,
         })
 
         self.employee = self.employee_model.create({
             'name': 'Employee 1',
             'user_id': self.user_1.id,
-            'journal_id': journal.id,
-            'product_id': self.product.id,
+            # 'product_id': self.product.id,
         })
 
         self.backend = self.backend_model.create({
@@ -101,9 +99,6 @@ class TestImportTimeEntries(common.TransactionCase):
             'contract_ref': 'contract_ref_field',
             'is_default': True,
         })
-
-        self.environment = ConnectorEnvironment(
-            self.backend, 'redmine.account.analytic.line')
 
     def get_time_entry_defaults(self):
         return {
@@ -122,19 +117,20 @@ class TestImportTimeEntries(common.TransactionCase):
         """
         Test that the proper analytic account is mapped
         """
-        mapper_obj = mapper.TimeEntryImportMapper(self.environment)
+        with self.backend.work_on('redmine.account.analytic.line') as work:
+            mapper = work.component(usage='import.mapper')
 
-        defaults = self.get_time_entry_defaults()
-        map_record = mapper_obj.map_record(defaults)
-        res = map_record.values(for_create=True)
+            defaults = self.get_time_entry_defaults()
+            map_record = mapper.map_record(defaults)
+            res = map_record.values(for_create=True)
 
-        self.assertEqual(res['account_id'], self.account.id)
+            self.assertEqual(res['account_id'], self.account.id)
 
-        defaults['contract_ref'] = 'efgh'
-        map_record = mapper_obj.map_record(defaults)
-        res = map_record.values()
+            defaults['contract_ref'] = 'efgh'
+            map_record = mapper.map_record(defaults)
+            res = map_record.values()
 
-        self.assertEqual(res['account_id'], self.account_2.id)
+            self.assertEqual(res['account_id'], self.account_2.id)
 
     @patch(import_job_path, side_effect=mock_delay)
     def import_time_entry_batch(
@@ -147,24 +143,26 @@ class TestImportTimeEntries(common.TransactionCase):
             search.return_value = [record_id]
             read.return_value = defaults
 
-            import_batch(
-                'redmine.account.analytic.line',
-                self.backend, filters={
-                    'from_date': '2015-01-01',
-                    'to_date': '2015-01-07',
-                }, options=options)
+            filters = {
+                'from_date': '2015-01-01',
+                'to_date': '2015-01-07',
+            }
+            model = 'redmine.account.analytic.line'
+            _logger.info(
+                'Scheduling time entry batch synchronization from Redmine '
+                'with backend %s.' % self.backend.name)
+            self.env[model].with_delay().import_batch(self.backend, filters=filters)
 
     def test_02_binder(self):
-        binder = RedmineModelBinder(self.environment)
-        mapper_obj = mapper.TimeEntryImportMapper(self.environment)
-
-        defaults = self.get_time_entry_defaults()
-        map_record = mapper_obj.map_record(defaults)
-        data = map_record.values(for_create=True)
-
-        binding_id = self.env['redmine.account.analytic.line'].create(data).id
-
-        binder.bind(123, binding_id)
+        model_name = 'redmine.account.analytic.line'
+        with self.backend.work_on(model_name) as work:
+            binder = work.component(usage='binder')
+            mapper = work.component(usage='import.mapper')
+            defaults = self.get_time_entry_defaults()
+            map_record = mapper.map_record(defaults)
+            data = map_record.values(for_create=True)
+            binding_id = self.env[model_name].create(data).id
+            binder.bind(123, binding_id)
 
     def test_03_import_batch_synchronizer(self):
         defaults = self.get_time_entry_defaults()
