@@ -61,24 +61,31 @@ class redmine_backend(models.Model):
 
         projects = adapter.redmine_api.project.all()
         exist = False
+        assigned = False
 
         if projects:
             if hasattr(projects[0], 'custom_fields'):
                 for cs in projects[0].custom_fields:
                     if cs['name'] == self.contract_ref:
                         exist = True
+                        assigned = bool(cs['value'])
             elif hasattr(projects[0], self.contract_ref):
                 exist = True
 
-        if exist is True:
-            raise UserError(
-                _('Connection test succeeded\n'
-                  'Everything seems properly set up'))
-        else:
+        if not exist:
             raise UserError(
                 _("Redmine backend configuration error\n"
                   "The contract # field name doesn't exist.")
             )
+        elif not assigned:
+            raise UserError(
+                _("Redmine backend configuration error\n"
+                  "The contract # field is not assigned in Redmine.")
+            )
+        else:
+            raise UserError(
+                _('Connection test succeeded\n'
+                  'Everything seems properly set up'))
 
     @api.model
     def prepare_time_entry_import(self):
