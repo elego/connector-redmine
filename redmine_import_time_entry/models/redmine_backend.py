@@ -26,8 +26,11 @@ class redmine_backend(models.Model):
         "to a project in Odoo. Each redmine project must have a unique "
         "value for this attribute."
     )
-    sync_tasks = fields.Boolean(
-        "Sync Versions -> Tasks",
+    import_issues = fields.Boolean(
+        "Import Issues",
+        help="Redmine Issues will be imported as Odoo tasks")
+    sync_tasks_version = fields.Boolean(
+        "Sync Task Versions",
         help="Redmine Versions will be synchronized with Odoo tasks, "
              "using their name to match")
     time_entry_last_update = fields.Datetime(

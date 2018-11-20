@@ -77,6 +77,8 @@ class TimeEntryImportMapper(Component):
             ])
             if len(task) == 1:
                 res['task_id'] = task.id
+        else:
+            res['task_id'] = self.assert_project_task(record, project.id)
 
         return res
 
@@ -102,3 +104,40 @@ class TimeEntryImportMapper(Component):
                 _('No user found for record %s.') % (record['entry_id']))
 
         return {'user_id': user.id}
+
+    def assert_project_task(self, record, project_id):
+        project_task_obj = self.env['project.task']
+        issue = record.get('issue')
+        task = project_task_obj.search([
+            ('project_id', '=', project_id),
+            ('name', '=', issue.subject)
+        ])
+        if task:
+            task.ensure_one()
+        else:
+            user_id = self.user_id(record)['user_id']
+            task_data = self.map_issue(issue, project_id, user_id)
+            task = project_task_obj.create(task_data)
+        return task.id
+
+    def map_issue(self, record, project_id, user_id):
+        ''' Method to map the issue data '''
+        res = {
+            'project_id': project_id,
+            'user_id': user_id,
+            'name': record['subject'],
+            # 'description': record['description'],
+            # 'kanban_state': record['status'],
+            # 'date_assign': record['start_date'],
+        }
+        return res
+
+        #TODO: Make with connector mapper
+        # project_id < - project
+        # user_id < - assigned_to
+        # name < - subject
+        # description < - description
+        # date_assign < - start_date
+        # kanban_state < - status
+
+        # TODO: description is still in Redmine format. It needs conversion to HTML

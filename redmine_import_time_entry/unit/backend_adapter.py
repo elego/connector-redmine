@@ -84,6 +84,7 @@ class TimeEntryAdapter(Component):
             'entry_id': long(entry.id),
             'spent_on': entry.spent_on,
             'hours': entry.hours,
+            'issue': issue,
             'issue_id': issue and long(issue.id),
             'issue_subject': issue and issue.subject,
             'contract_ref': contract_ref,
@@ -93,7 +94,7 @@ class TimeEntryAdapter(Component):
             'comments': entry.comments,
         }
 
-        if self.backend_record.sync_tasks:
+        if self.backend_record.sync_tasks_version:
             res['version'] = issue.version
 
         user = self.redmine_api.user.get(entry.user.id)
