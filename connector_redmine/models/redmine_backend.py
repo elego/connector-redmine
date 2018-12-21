@@ -32,6 +32,15 @@ class RedmineBackend(models.Model):
         string='Version',
         required=True
     )
+    proxy = fields.Char(
+        'Proxy',
+        size=128,
+        required=False,
+    )
+    verify_ssl = fields.Boolean(
+        'Verify SSL',
+        default=True,
+    )
 
     is_default = fields.Boolean('Default Redmine Service')
 

@@ -14,7 +14,7 @@
             </h1>
             <group name="redmine" string="Redmine Configuration" groups="connector.group_connector_manager">
               <group colspan="4" col="4">
-                <field name="location" placeholder="e.g. http://localhost:8081/redmine"
+                <field name="location" placeholder="e.g. http://redmine.url/"
                     colspan="4"/>
                 <field name="key" colspan="2"/>
                 <button name="check_auth"
@@ -25,6 +25,9 @@
                 <field name="version"/>
                 <field name="is_default"/>
                 <!--<field name="active"/>-->
+                <field name="proxy" placeholder="e.g. http://proxy:8081"
+                    colspan="2"/>
+                <field name="verify_ssl"/>
               </group>
             </group>
             <notebook/>

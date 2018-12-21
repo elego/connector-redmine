@@ -36,12 +36,19 @@ class RedmineAdapter(AbstractComponent):
     _usage = 'backend.adapter'
 
     def _auth(self):
-        auth_data = self.backend_record.read(['location', 'key'])[0]
+        backend = self.backend_record
+        auth_data = backend.sudo().read(['location', 'key'])[0]
+
+        requests = {'verify': backend.verify_ssl}
+        if backend.proxy:
+            requests['proxies'] = dict([backend.proxy.split('://')])
+        cnx_options = {'requests': requests}
 
         try:
             redmine_api = Redmine(
                 auth_data['location'],
                 key=auth_data['key'],
+                **cnx_options
             )
             redmine_api.auth()
 
@@ -73,6 +80,7 @@ class RedmineAdapter(AbstractComponent):
                 _("No user with login %s found in Redmine.") % login)
 
         return user_id
+
 
 class BackendAdapter(Component):
 
